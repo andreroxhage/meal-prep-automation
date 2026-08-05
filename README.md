@@ -39,7 +39,7 @@ You: "Planera mat för veckan — vi vill ha hög protein, snabba vardagsrätter
                         ↓ optional
          ┌──────────────────────────────────────┐
          │      Export to Notion (Inhandling)    │
-         │  Overview page + subpages per section │
+         │  Overview + shortcuts to Recept pages  │
          └──────────────────────────────────────┘
 ```
 
@@ -53,7 +53,7 @@ Phases 1–3 each have a **mandatory stop point** — the system never proceeds 
 - **Smart shopping lists** — Pools ingredients across all recipes, normalizes units, categorizes by store section
 - **Standardized recipe collection** — Compiles every recipe into one consistent format, scaled to your portions
 - **Optimized meal prep** — Parallelizes cooking tasks (oven + stovetop + cold prep) to minimize total time
-- **Notion export** — Publishes a finished week to the Notion *Inhandling* database as an overview page with subpages for the shopping list, each recipe, and the meal-prep plan
+- **Notion export** — Publishes a finished week to the Notion *Inhandling* database as an overview page with subpages for the shopping list and meal-prep plan. Recipes are never duplicated: existing pages in the *Recept* database are linked as shortcuts, and week-specific adaptations are written back into the recipe itself
 - **Swedish-first** — All output in Swedish with metric units and Swedish grocery store names
 
 ## Getting Started
