@@ -26,6 +26,13 @@ Användaren vill skapa ett eget recept. Delegera till `recipe-creator`-agenten.
    - Visa receptet
    - Fråga om justeringar behövs
 
+## Format
+
+Receptet följer `.claude/rules/recipe-style.md`. Viktigast: **mängden ska stå i
+instruktionsstegen**, inte bara i ingredienslistan. Formatet kontrolleras
+automatiskt när agenten skriver filen — `recipe-creator` får eventuella fel
+tillbaka och rättar dem innan den är klar.
+
 ## Filnamnskonvention
 
 Receptfilen sparas som: `YYYY-MM-DD/recept-<slug>-<portioner>p.md`

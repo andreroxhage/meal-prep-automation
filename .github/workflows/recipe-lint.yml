@@ -1,0 +1,51 @@
+name: Receptstandard
+
+on:
+  pull_request:
+    paths:
+      - "recipe/**/*.md"
+      - "**/recept-*.md"
+      - "**/04-alla-recept.md"
+      - ".claude/hooks/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Kör validatorns egna test
+        run: python3 .claude/hooks/test_validate.py
+
+      # Endast filer som ändras i denna PR kontrolleras. Äldre recept som inte
+      # följer standarden ska inte blockera orelaterade ändringar.
+      - name: Hitta ändrade receptfiler
+        id: changed
+        run: |
+          git diff --name-only --diff-filter=d \
+            "origin/${{ github.base_ref }}...${{ github.sha }}" \
+            | grep -E '^recipe/.*\.md$|(^|/)recept-[^/]*\.md$|(^|/)04-alla-recept\.md$' \
+            > changed.txt || true
+          echo "count=$(wc -l < changed.txt)" >> "$GITHUB_OUTPUT"
+          cat changed.txt
+
+      - name: Validera mot receptstandarden
+        if: steps.changed.outputs.count != '0'
+        run: xargs -a changed.txt python3 .claude/hooks/validate_recipe.py
+
+      - name: Korskontrollera handlingslista mot receptsamling
+        if: steps.changed.outputs.count != '0'
+        run: |
+          status=0
+          for dir in $(xargs -a changed.txt -n1 dirname | sort -u); do
+            if [ -f "$dir/03-handlingslista.md" ] && [ -f "$dir/04-alla-recept.md" ]; then
+              python3 .claude/hooks/validate_week.py "$dir" || status=1
+            fi
+          done
+          exit $status
