@@ -32,50 +32,46 @@ Skapa ett komplett, testat-känsla recept som `YYYY-MM-DD/recept-<slug>.md`.
    - Är tiderna realistiska?
    - Finns förvaring/matlådetips?
 
-## Outputformat (recept-<slug>.md)
+## Outputformat
 
-```markdown
-# Recept — [Rättens namn] för [X] portioner
+Följ `.claude/rules/recipe-style.md` — den är den enda källan för receptformatet.
+Läs den innan du skriver, och `.claude/rules/recipe-examples.md` för ett komplett
+exempel att kopiera. Regeln laddas automatiskt när du öppnar en receptfil.
 
-[1-2 meningar om rätten och vad som gör den bra]
+De tre regler som oftast missas:
 
-## Ingredienser ([X] portioner)
+1. **Mängden ska stå i instruktionssteget**, fetmarkerad, första gången
+   ingrediensen används: `Häll **1,5 dl** mjölk över **1 dl** ströbröd`.
+   Läsaren står vid spisen och scrollar inte tillbaka till listan.
+2. **Varje ingrediens i listan ska nämnas i minst ett steg** — vid namn.
+   "Blanda alla ingredienser" räcker inte.
+3. **Mängd först på ingrediensraden**: `- 1,5 dl mjölk`, aldrig `- Mjölk — 1,5 dl`.
+   Decimalkomma, mellanslag före enheten.
 
-### [Kategori 1, t.ex. "Bas"]
-- [mängd] [ingrediens]
-- ...
+## Kvalitetskontroll
 
-### [Kategori 2, t.ex. "Sås"]
-- ...
+Formatet kontrolleras maskinellt av `.claude/hooks/validate_recipe.py`:
 
-### [Kategori 3, t.ex. "Tillbehör"]
-- ...
+- Efter varje `Write`/`Edit` normaliseras mekaniska avvikelser automatiskt och
+  kvarstående fel skickas tillbaka till dig. **Rader märkta `RÄTTAT` är redan
+  ändrade på disk** — läs om filen innan du redigerar vidare.
+- När du är klar körs samma kontroll som en `SubagentStop`-gate. Har du kvar
+  `FEL` skickas du tillbaka till arbetet, så rätta dem innan du avslutar.
 
-## Gör så här
+Kontrollera dessutom själv, innan du lämnar ifrån dig receptet:
 
-### 1) [Steg-rubrik]
-- [Instruktion med tydliga detaljer]
-- [Temperaturer och tider alltid specifika]
-
-### 2) [Steg-rubrik]
-...
-
-## Matlåda / förvaring
-- Kyl: [hållbarhet]
-- Frys: [hållbarhet + tips]
-- Uppvärmning: [bästa metod]
-
-## Källor (research)
-- [Källa 1]: [URL]
-- [Källa 2]: [URL]
-```
+- Stämmer mängderna? (inte 1 kg salt...)
+- Är instruktionerna i rätt ordning och tiderna realistiska?
+- Finns förvaring och matlådetips med?
 
 ## Regler
 
-- **Svenska**: Allt på svenska med metriska enheter
-- **Proffskvalitet**: Skriv som en kock, inte som en bloggare. Konkret, precist, inga tomma ord.
-- **Tydliga instruktioner**: "Stek på medelhög värme i 4-5 min tills gyllenbrun" — inte "stek tills klart"
-- **Temperaturer**: Alltid i °C, ange innertemperaturer för kött
-- **Slug-format**: `recept-<namn-med-bindestreck>-<portioner>p.md` (t.ex. `recept-kycklingfajitas-6p.md`)
-- **Portionsskalning**: Om du baserar på ett recept med andra portioner, räkna om ALLA ingredienser
-- **Förvaring alltid med**: Kyl/frys-hållbarhet, uppvärmningstips
+- **Svenska** genomgående, metriska enheter.
+- **Proffskvalitet**: skriv som en kock, inte som en bloggare. Konkret, precist,
+  inga tomma ord.
+- **Tydliga instruktioner**: "Stek på medelhög värme i 4–5 min tills gyllenbrun"
+  — inte "stek tills klart".
+- **Temperaturer**: alltid i °C, ange innertemperaturer för kött.
+- **Portionsskalning**: utgår du från ett recept med andra portioner, räkna om
+  ALLA ingredienser — och uppdatera mängderna i instruktionsstegen också.
+- **Filnamn**: `recept-<namn-med-bindestreck>-<portioner>p.md`.

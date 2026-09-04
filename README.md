@@ -53,7 +53,7 @@ Phases 1–3 each have a **mandatory stop point** — the system never proceeds 
 - **Smart shopping lists** — Pools ingredients across all recipes, normalizes units, categorizes by store section
 - **Standardized recipe collection** — Compiles every recipe into one consistent format, scaled to your portions
 - **Optimized meal prep** — Parallelizes cooking tasks (oven + stovetop + cold prep) to minimize total time
-- **Notion export** — Publishes a finished week to the Notion *Inhandling* database as an overview page with subpages for the shopping list and meal-prep plan. Recipes are never duplicated: existing pages in the *Recept* database are linked as shortcuts, and week-specific adaptations are written back into the recipe itself
+- **Notion export** — Publishes a finished week to the Notion *Inhandling* database as an overview page with subpages for the shopping list, each recipe, and the meal-prep plan
 - **Swedish-first** — All output in Swedish with metric units and Swedish grocery store names
 
 ## Getting Started
@@ -82,6 +82,11 @@ claude --agent meal-planning-orchestrator
 /create-recipe kycklingfajitas 6
 ```
 
+**Verify recipes against the standard:**
+```
+/verify-recipes 2026-06-08
+```
+
 **Export a finished week to Notion:**
 ```
 /export-to-notion 2026-06-08
@@ -102,6 +107,14 @@ step after Phase 5, or standalone on any existing week folder.
 │   ├── recipe-compiler              # Phase 4: standardized recipe collection
 │   ├── meal-prep-optimizer          # Phase 5: prep timeline
 │   └── codebase-workflow-analyzer   # Meta: improve the workflow itself
+├── rules/                           # Path-scoped conventions
+│   ├── recipe-style.md              # The recipe standard (enforced by hook)
+│   └── recipe-examples.md           # Few-shot gold recipe + good/bad pairs
+├── hooks/                           # Deterministic validation
+│   ├── validate_recipe.py           # Normalizes + validates one recipe
+│   ├── validate_week.py             # Shopping list ↔ recipe cross-check
+│   ├── recipe_guard.sh              # PostToolUse
+│   └── subagent_recipe_gate.sh      # SubagentStop
 ├── skills/
 │   ├── meal-planning-hello-fresh/   # Main workflow skill
 │   │   ├── SKILL.md                 # Orchestration instructions

@@ -25,3 +25,7 @@
 # Meal plan folders (generated per week)
 20??-??-??/
 
+
+# Python-cache från hooks
+__pycache__/
+*.pyc

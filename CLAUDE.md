@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository. `AGENTS.md` is a symlink to this file, so other coding agents read the same
+instructions — edit this file, not the symlink.
 
 ## Project Overview
 
@@ -9,15 +11,27 @@ This is a meal planning repository that implements a HelloFresh-like workflow fo
 ## Repository Structure
 
 ```
-YYYY-MM-DD/                          # Date-based meal planning folders
+recipe/                              # Committed recipe library (not week-specific)
+└── recept-<slug>-<portioner>p.md
+
+YYYY-MM-DD/                          # Date-based meal planning folders (gitignored)
 ├── 01-brainstorming.md              # Meal preferences + candidate meals
 ├── 02-receptval.md                  # Selected recipes with links/sources
-├── recept-*.md                      # Custom recipe files (when applicable)
+├── recept-*.md                      # Week-specific custom recipes
 ├── 03-handlingslista.md             # Pooled shopping list (generated on request)
 ├── 04-alla-recept.md                # All recipes in standardized format (generated on request)
 └── 05-meal-prep-plan.md             # Optimized prep timeline (generated on request)
 
 .claude/
+├── rules/                           # Path-scoped conventions (load with matching files)
+│   ├── recipe-style.md              # THE recipe standard — enforced by hook
+│   └── recipe-examples.md           # Few-shot: gold recipe + good/bad pairs
+├── hooks/
+│   ├── validate_recipe.py           # Normalizes + validates a recipe file
+│   ├── validate_week.py             # Cross-checks 03 shopping list against 04
+│   ├── recipe_guard.sh              # PostToolUse wrapper
+│   └── subagent_recipe_gate.sh      # SubagentStop wrapper
+├── settings.json                    # Hook registration (committed)
 ├── agents/
 │   ├── meal-planning-orchestrator.md  # Top-level orchestrator (use with claude --agent)
 │   ├── brainstorming-agent.md         # Phase 1: meal candidate generation
@@ -57,6 +71,30 @@ User
 - **Parallel recipe research**: Phase 2 spawns one `recipe-researcher` agent per dish, all running in parallel. Each researcher compares 3-5 sources independently.
 - **Subagents can't spawn subagents**: The main conversation acts as orchestrator. Alternatively, use `claude --agent meal-planning-orchestrator` for automated orchestration.
 - **Skills preloaded into orchestrator**: The orchestrator agent has `meal-planning-hello-fresh` skill injected at startup via the `skills` field.
+
+## Recipe Standard: Rules + Hooks (deterministic)
+
+Recipe formatting is **not** left to prompt adherence. The convention lives in one
+place and is enforced mechanically:
+
+| Layer | File | What it does |
+|---|---|---|
+| Convention | `.claude/rules/recipe-style.md` | The recipe standard. Path-scoped — loads only when working with recipe files. |
+| Few-shot | `.claude/rules/recipe-examples.md` | One gold recipe + good/bad pairs with reasoning. |
+| Enforcement | `.claude/hooks/recipe_guard.sh` (PostToolUse on `Write`/`Edit`) | Normalizes mechanical issues in place, feeds remaining errors back to Claude. |
+| Gate | `.claude/hooks/subagent_recipe_gate.sh` (SubagentStop) | `recipe-creator` / `recipe-compiler` can't finish while their recipes have errors. Releases after 2 blocked attempts so it can't loop. |
+| Cross-check | `.claude/hooks/validate_week.py` | Every ingredient in `04` must appear in `03` with sufficient quantity. |
+| Manual + CI | `/verify-recipes`, `.github/workflows/recipe-lint.yml` | Same validator on demand and on PRs (changed files only). |
+
+**The rule that matters most:** every instruction step repeats the amount inline
+(`Häll **1,5 dl** mjölk över **1 dl** ströbröd`), because the reader is standing at
+the stove and won't scroll back to the ingredient list.
+
+When the hook reports `RÄTTAT`, the file on disk was already changed — re-read it
+before editing further. `FEL` must be fixed, not explained away. `TIPS` is advisory.
+
+Recipes in `recipe/` predate the standard and are not yet migrated; convert one only
+when asked, rather than running a mass migration.
 
 ## Core Workflow & Architecture
 
@@ -153,7 +191,7 @@ phase gate, and can also be run standalone on any existing week folder.
 
 ### Custom Recipes
 
-When creating custom recipes, save as `YYYY-MM-DD/recept-<slug>-<portioner>p.md` and reference from `02-receptval.md` as "Eget recept: `recept-<slug>.md`". Use `/create-recipe` or the `recipe-creator` agent.
+When creating custom recipes, save as `YYYY-MM-DD/recept-<slug>-<portioner>p.md` and reference from `02-receptval.md` as "Eget recept: `recept-<slug>.md`". Use `/create-recipe` or the `recipe-creator` agent. The format is defined by `.claude/rules/recipe-style.md` and enforced by the recipe hook — see **Recipe Standard: Rules + Hooks** above.
 
 ### Meal Prep Planning (Phase 5)
 
@@ -181,7 +219,7 @@ Optimize for minimal total time by:
 |---|---|---|
 | `meal-planning-hello-fresh` | Auto or `/meal-planning-hello-fresh` | Main workflow with orchestration |
 | `create-recipe` | `/create-recipe [dish] [portions]` | Create a custom recipe |
-| `export-to-notion` | `/export-to-notion [YYYY-MM-DD]` | Publish a finished week to Notion (Inhandling): overview + shortcuts to existing recipes, never duplicates |
+| `export-to-notion` | `/export-to-notion [YYYY-MM-DD]` | Publish a finished week to Notion (Inhandling) as overview + subpages |
 
 ## Working with Date Folders
 

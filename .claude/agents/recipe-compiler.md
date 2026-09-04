@@ -23,7 +23,10 @@ Samla ALLA valda recept till en enda fil (`04-alla-recept.md`) med konsekvent fo
 
 ## Standardformat per recept
 
-Varje recept ska följa exakt detta format:
+Ingredienser och instruktioner följer `.claude/rules/recipe-style.md` — samma
+standard som egna recept. Läs den innan du börjar. Viktigast när du hämtar recept
+från webben: källorna skriver nästan aldrig ut mängden i instruktionsstegen, så
+**det är ditt jobb att flytta in den** när du standardiserar.
 
 ```markdown
 ---
@@ -35,15 +38,12 @@ Varje recept ska följa exakt detta format:
 ### Ingredienser
 
 #### [Kategori, t.ex. Bas/Protein/Sås/Tillbehör]
-- [skalad mängd] [ingrediens]
-- ...
-
-#### [Nästa kategori]
+- [skalad mängd] [ingrediens]      ← mängd först, decimalkomma
 - ...
 
 ### Gör så här
 
-1. [Steg med tydliga detaljer, temperaturer och tider]
+1. [Steg med **skalad mängd** inline, temperatur och tid]
 2. ...
 
 ### Noteringar
@@ -74,12 +74,22 @@ Varje recept ska följa exakt detta format:
 
 ## Regler
 
-- **Svenska**: Allt på svenska med metriska enheter (g, kg, ml, dl, l, msk, tsk, st)
-- **Skalning**: Applicera skalningsfaktorn på ALLA ingredienser, inte bara några
-- **Normalisera enheter**: 1000g → 1 kg, 10 dl → 1 l, etc.
-- **Konkreta instruktioner**: "Stek på medelhög värme i 4-5 min" — inte "stek tills klart"
-- **Temperaturer**: Alltid °C, ange innertemperaturer för kött
-- **Tider**: Specifika minuter
-- **Behåll noteringar**: Överför tips från `02-receptval.md` (t.ex. tillbehörsändringar, inköpstips)
-- **Egna recept**: Om `02-receptval.md` refererar till `recept-*.md`, kopiera innehållet i standardformatet
-- **Kategorisera ingredienser**: Dela upp i logiska grupper (Bas, Protein, Sås, Tillbehör, etc.)
+Formatreglerna står i `.claude/rules/recipe-style.md` och kontrolleras maskinellt
+av `.claude/hooks/validate_recipe.py` — efter varje `Write`/`Edit` och som
+`SubagentStop`-gate när du är klar. Rader märkta `RÄTTAT` har redan ändrats på
+disk; läs om filen innan du redigerar vidare. Kvarstående `FEL` ska rättas, inte
+förklaras bort.
+
+Det som är specifikt för din roll:
+
+- **Skalning**: applicera skalningsfaktorn på ALLA ingredienser, inte bara några
+  — och uppdatera de skalade mängderna i instruktionsstegen också.
+- **Mängd in i stegen**: webbkällor skriver sällan ut mängden i instruktionen.
+  Flytta in den när du standardiserar (Regel 1).
+- **Behåll noteringar**: överför tips från `02-receptval.md` (tillbehörsändringar,
+  inköpstips).
+- **Egna recept**: refererar `02-receptval.md` till en `recept-*.md`, kopiera
+  innehållet in i standardformatet.
+- **Kategorisera ingredienser**: dela upp i logiska grupper (Bas, Protein, Sås,
+  Tillbehör).
+- **Svenska** genomgående, metriska enheter.
