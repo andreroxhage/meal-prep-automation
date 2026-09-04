@@ -106,8 +106,9 @@ Ge agenten alla recept (baserat på `04-alla-recept.md`). Agenten skapar tidsopt
 Fråga: **"Vill du exportera veckan till Notion (Inhandling)?"**
 
 Om ja: kör skillen `export-to-notion` (i huvudkonversationen, inte via subagent). Den skapar
-en översiktssida i Notion-databasen 💸 Inhandling med underliggande sidor för handlingslista,
-varje recept och meal prep-plan. Se [export-to-notion](../export-to-notion/SKILL.md).
+en översiktssida i Notion-databasen 💸 Inhandling med undersidor för handlingslista och
+meal prep-plan, plus genvägar till recepten i Recept-databasen (recept dupliceras aldrig).
+Se [export-to-notion](../export-to-notion/SKILL.md).
 
 Klart! Ingen ytterligare stoppunkt efter detta.
 

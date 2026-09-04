@@ -71,7 +71,8 @@ Om ja: detta körs som skillen `export-to-notion` i **huvudkonversationen**, int
 Notion-MCP är inte garanterat tillgängligt i en subagent, så orkestratorn delegerar tillbaka
 till huvudkonversationen (be användaren köra `/export-to-notion [YYYY-MM-DD]`, eller kör
 skillen om du körs i huvudkonversationen). Skillen skapar en översiktssida i databasen
-💸 Inhandling med underliggande sidor för handlingslista, varje recept och meal prep-plan.
+💸 Inhandling med undersidor för handlingslista och meal prep-plan, och **genvägar** till
+recepten i Recept-databasen — recept dupliceras aldrig.
 
 Klart! Ingen stoppunkt efter detta.
 

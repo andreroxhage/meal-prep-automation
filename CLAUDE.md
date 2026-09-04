@@ -85,13 +85,24 @@ After Phase 5, the week can be published to the Notion database **💸 Inhandlin
 `export-to-notion` skill (`/export-to-notion [YYYY-MM-DD]`). This is optional, not a hard
 phase gate, and can also be run standalone on any existing week folder.
 
-- **Structure**: one overview page named `Vecka YYYY-MM-DD` (summary + linked table of
-  contents), with **subpages** for the shopping list (`03`), one per recipe (parsed from
-  `04`), and the meal-prep plan (`05`).
+- **Never duplicate a recipe.** Recipes live in the **Recept** database, not in week pages.
+  Before creating anything, match every dish against Recept and link existing ones with
+  `<mention-page>`. Recipes that don't exist yet are created **in the Recept database** (so
+  they're reusable next week), not as week subpages. A recipe that only exists inside an old
+  week page does not count as existing — create a proper recipe page for it.
+- **Week-specific adaptations** (scaling, swapped ingredients) are written into the recipe
+  page itself, so there is exactly one recipe per dish. Ask first if the change alters the
+  dish's character (different main protein, different cooking method).
+- **Structure**: one overview page named `Vecka YYYY-MM-DD` (summary + `## Recept` shortcuts
+  + `## Innehåll`), with exactly **two subpages**: the shopping list (`03`) and the meal-prep
+  plan (`05`).
 - **Must run in the main conversation** — Notion MCP isn't guaranteed inside subagents.
-- **Inhandling data source** (parent for new pages):
+- **Inhandling data source** (parent for week pages):
   `collection://2ad3a69e-7647-80a2-89f3-000b0dfb831e` (database id
   `2ad3a69e-7647-806c-bba0-d503a8f0f2a0`, under the "Matlagning" page).
+- **Recept data source** (parent for new recipes):
+  `collection://ebeb4bdf-f600-4429-bf2b-68e0a78a623e` (database "Recipes",
+  `b90e9acce8ee46009f77bceb1afe7f02`).
 - See `.claude/skills/export-to-notion/SKILL.md` for the full procedure.
 
 ### Language & Units
@@ -170,7 +181,7 @@ Optimize for minimal total time by:
 |---|---|---|
 | `meal-planning-hello-fresh` | Auto or `/meal-planning-hello-fresh` | Main workflow with orchestration |
 | `create-recipe` | `/create-recipe [dish] [portions]` | Create a custom recipe |
-| `export-to-notion` | `/export-to-notion [YYYY-MM-DD]` | Publish a finished week to Notion (Inhandling) as overview + subpages |
+| `export-to-notion` | `/export-to-notion [YYYY-MM-DD]` | Publish a finished week to Notion (Inhandling): overview + shortcuts to existing recipes, never duplicates |
 
 ## Working with Date Folders
 
