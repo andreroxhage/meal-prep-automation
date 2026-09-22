@@ -37,6 +37,10 @@ från webben: källorna skriver nästan aldrig ut mängden i instruktionsstegen,
 
 ### Ingredienser
 
+#### Totalt att handla             ← bara när en råvara delas mellan dellistor
+| Vara | Totalt | Varav |
+| --- | --- | --- |
+
 #### [Kategori, t.ex. Bas/Protein/Sås/Tillbehör]
 - [skalad mängd] [ingrediens]      ← mängd först, decimalkomma
 - ...
@@ -86,6 +90,12 @@ Det som är specifikt för din roll:
   — och uppdatera de skalade mängderna i instruktionsstegen också.
 - **Mängd in i stegen**: webbkällor skriver sällan ut mängden i instruktionen.
   Flytta in den när du standardiserar (Regel 1).
+- **Mängden i steget måste vara den som faktiskt tas** (Regel 6). Skalning är
+  där det här spricker: gör faktorn satsen större än en bunke eller en plåt
+  rymmer, dela steget och skriv mängden per omgång först, totalen som referens.
+  En fetmarkerad totalmängd i ett steg som körs två gånger dubbeldoserar satsen.
+- **Delad råvara → totaltabell** (Regel 4a): förekommer samma vara i flera
+  dellistor efter skalning, lägg in `#### Totalt att handla` överst.
 - **Behåll noteringar**: överför tips från `02-receptval.md` (tillbehörsändringar,
   inköpstips).
 - **Egna recept**: refererar `02-receptval.md` till en `recept-*.md`, kopiera

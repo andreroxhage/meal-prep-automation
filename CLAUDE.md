@@ -80,7 +80,7 @@ place and is enforced mechanically:
 | Layer | File | What it does |
 |---|---|---|
 | Convention | `.claude/rules/recipe-style.md` | The recipe standard. Path-scoped — loads only when working with recipe files. |
-| Few-shot | `.claude/rules/recipe-examples.md` | One gold recipe + good/bad pairs with reasoning. |
+| Few-shot | `.claude/rules/recipe-examples.md` | Two gold recipes (one-session and two-day) + good/bad pairs with reasoning. |
 | Enforcement | `.claude/hooks/recipe_guard.sh` (PostToolUse on `Write`/`Edit`) | Normalizes mechanical issues in place, feeds remaining errors back to Claude. |
 | Gate | `.claude/hooks/subagent_recipe_gate.sh` (SubagentStop) | `recipe-creator` / `recipe-compiler` can't finish while their recipes have errors. Releases after 2 blocked attempts so it can't loop. |
 | Cross-check | `.claude/hooks/validate_week.py` | Every ingredient in `04` must appear in `03` with sufficient quantity. |
@@ -89,6 +89,14 @@ place and is enforced mechanically:
 **The rule that matters most:** every instruction step repeats the amount inline
 (`Häll **1,5 dl** mjölk över **1 dl** ströbröd`), because the reader is standing at
 the stove and won't scroll back to the ingredient list.
+
+**Its necessary companion (Regel 6):** the inline amount must be the one the reader
+actually takes. A step that says "halve every quantity" and then bolds the totals
+turns Regel 1 into a hazard — the bold number reads as "this goes in the bowl now".
+Steps run in batches spell out the per-batch amount first, with the total as
+reference. A recipe is read three times — when shopping (Regel 4a's totals table),
+when planning (Regel 4b's day grouping, Regel 7's decisions-before-steps) and when
+cooking — and the standard has to carry all three.
 
 When the hook reports `RÄTTAT`, the file on disk was already changed — re-read it
 before editing further. `FEL` must be fixed, not explained away. `TIPS` is advisory.

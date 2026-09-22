@@ -160,6 +160,147 @@ check("no-check-markören tystar Regel 2", errors_for(silenced), [])
 
 
 # --------------------------------------------------------------------------
+# Regel 4a/4c, 6 och vandningens rackvidd
+# --------------------------------------------------------------------------
+
+def tips_for(text: str, name: str = "recept-test-4p.md") -> list[str]:
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / name
+        path.write_text(text, encoding="utf-8")
+        return validate(path, fix=False).tips
+
+
+# Vandningen '- Namn — mangd' far bara rora ingredienssektionen. En
+# instruktionspunkt med ' — ' foljt av en siffra blev tidigare sonderskriven.
+SECTIONED = """## Ingredienser (4 portioner)
+
+### Bas
+- Mjölk — 1,5 dl
+
+## Gör så här
+
+### 1) Lägg upp
+- Lägg bullarna i bullformar, 12 per plåt — 24 bullar blir 2 plåtar.
+"""
+
+flipped_doc, _ = normalize(SECTIONED)
+check(
+    "ingrediensraden vänds fortfarande",
+    "- 1,5 dl mjölk" in flipped_doc,
+    True,
+)
+check(
+    "instruktionspunkt med ' — <siffra>' lämnas orörd",
+    "- Lägg bullarna i bullformar, 12 per plåt — 24 bullar blir 2 plåtar." in flipped_doc,
+    True,
+)
+
+# Tva dellistor som delar en ravara -> tips om totaltabell (Regel 4a).
+SHARED = GOOD.replace(
+    """### Bas
+- 1,5 dl mjölk
+- 500 g blandfärs
+- salt och svartpeppar efter smak""",
+    """### Bas
+- 1,5 dl mjölk
+- 500 g blandfärs
+- salt och svartpeppar efter smak
+
+### Sås
+- 2 dl mjölk
+- 1 tsk salt""",
+).replace(
+    "- Smaka av med salt och svartpeppar.",
+    "- Smaka av med salt och svartpeppar.\n- Red såsen med **2 dl** mjölk och **1 tsk** salt.",
+)
+
+check(
+    "delad råvara ger tips om totaltabell",
+    any("Totalt att handla" in tip for tip in tips_for(SHARED)),
+    True,
+)
+check(
+    "totaltabell tystar tipset",
+    any(
+        "Totalt att handla" in tip
+        for tip in tips_for(
+            SHARED.replace(
+                "### Bas",
+                "### Totalt att handla\n\n| Vara | Totalt |\n| --- | --- |\n| Mjölk | 3,5 dl |\n\n### Bas",
+                1,
+            )
+        )
+    ),
+    False,
+)
+
+# Skafferivaror motiverar ingen totaltabell.
+PANTRY_ONLY = GOOD.replace(
+    """### Bas
+- 1,5 dl mjölk""",
+    """### Sås
+- 1 tsk salt
+
+### Bas
+- 1,5 dl mjölk""",
+).replace(
+    "- Smaka av med salt och svartpeppar.",
+    "- Smaka av med **1 tsk** salt och svartpeppar.",
+)
+check(
+    "delat salt ger inget tips om totaltabell",
+    any("Totalt att handla" in tip for tip in tips_for(PANTRY_ONLY)),
+    False,
+)
+
+# '## Noter' ar tillaten mellan Matlada och Kallor, men inte fore Matlada.
+WITH_NOTER = GOOD.replace(
+    "## Källor", "## Noter\n\n### Varför mjölk\n\nBakgrund.\n\n## Källor"
+)
+check("'## Noter' på rätt plats ger inga fel", errors_for(WITH_NOTER), [])
+
+BAD_NOTER = GOOD.replace(
+    "## Matlåda / förvaring", "## Noter\n\nBakgrund.\n\n## Matlåda / förvaring"
+)
+check("'## Noter' före Matlåda upptäcks", len(errors_for(BAD_NOTER)), 1)
+
+# Ett numrerat steg som egentligen ar en variant eller bakgrund (Regel 4c).
+NON_STEP_DOC = GOOD.replace(
+    "### 1) Blanda", "### 1) Blanda\n- Rör ihop.\n\n### 2) Alternativ: byt ut mjölken"
+)
+check(
+    "variant som numrerat steg ger tips",
+    any("Noter" in tip for tip in tips_for(NON_STEP_DOC)),
+    True,
+)
+
+# Steg som kors i omgangar utan mangd per omgang (Regel 6).
+BATCHED = GOOD.replace(
+    "- Häll **1,5 dl** mjölk",
+    "- Halvera varje mängd i det här steget och kör momentet två gånger.\n"
+    "- Häll **1,5 dl** mjölk",
+)
+check(
+    "omgångskörning utan mängd per omgång ger tips",
+    any("Regel 6" in tip for tip in tips_for(BATCHED)),
+    True,
+)
+check(
+    "'per omgång' tystar tipset",
+    any(
+        "Regel 6" in tip
+        for tip in tips_for(
+            BATCHED.replace(
+                "kör momentet två gånger.",
+                "kör momentet två gånger — per omgång blir det 0,75 dl mjölk.",
+            )
+        )
+    ),
+    False,
+)
+
+
+# --------------------------------------------------------------------------
 
 if failures:
     print(f"{len(failures)} test misslyckades:\n")

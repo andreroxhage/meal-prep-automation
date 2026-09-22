@@ -26,6 +26,7 @@ UNITS = [
     "kg", "g", "ml", "cl", "dl", "l", "msk", "tsk", "krm", "st",
     "klyftor", "klyfta", "knippen", "knippe", "nypor", "nypa", "nävar", "näve",
     "paket", "burkar", "burk", "förp", "skivor", "skiva", "krukor", "kruka",
+    "kvistar", "kvist",
 ]
 UNIT_RE = "|".join(sorted(UNITS, key=len, reverse=True))
 
@@ -79,6 +80,7 @@ class Ingredient:
     has_number: bool
     skip_qty: bool
     skip_all: bool
+    group: str = ""
 
 
 @dataclass
@@ -117,6 +119,11 @@ def normalize(text: str) -> tuple[str, list[str]]:
     fixes: list[str] = []
     lines = text.split("\n")
     in_code = False
+    # Vandningen av '- Namn — mangd' far bara rora ingredienssektionen. En
+    # instruktionspunkt som '- Lagg 12 per plat — 24 bullar blir 2 platar' ser
+    # likadan ut for regexen och blev tidigare sonderskriven. Default True sa att
+    # normalize() pa en losryckt rad (utan rubriker) fortfarande vander den.
+    in_ingredients = True
 
     for i, line in enumerate(lines):
         if line.lstrip().startswith("```"):
@@ -124,6 +131,8 @@ def normalize(text: str) -> tuple[str, list[str]]:
             continue
         if in_code or _skip_line(line):
             continue
+        if re.match(r"^##\s+\S", line):
+            in_ingredients = bool(re.match(r"^##\s+Ingredienser", line))
         original = line
 
         # 1,2 kg — decimalkomma istallet for punkt
@@ -174,9 +183,10 @@ def normalize(text: str) -> tuple[str, list[str]]:
         line = re.sub(rf"\b(\d+(?:,\d+)?)\s+({UNIT_RE})\b", unit_norm, line)
 
         # "- Mjölk — 1,5 dl" -> "- 1,5 dl mjölk"
-        flipped = flip_ingredient_line(line)
-        if flipped is not None:
-            line = flipped
+        if in_ingredients:
+            flipped = flip_ingredient_line(line)
+            if flipped is not None:
+                line = flipped
 
         if line != original:
             fixes.append(f"rad {i + 1}: {original.strip()!r} → {line.strip()!r}")
@@ -255,6 +265,7 @@ def check_structure(path: Path, lines: list[str], rep: Report) -> int | None:
             ("Ingredienser", r"^##\s+Ingredienser"),
             ("Gör så här", r"^##\s+Gör så här"),
             ("Matlåda", r"^##\s+Matlåda"),
+            ("Noter", r"^##\s+Noter"),
             ("Källor", r"^##\s+Källor"),
         )
         for m in [re.search(pattern, text, re.M)]
@@ -263,7 +274,7 @@ def check_structure(path: Path, lines: list[str], rep: Report) -> int | None:
     if order != sorted(order):
         rep.error(
             "rubrikerna ligger i fel ordning. Ordningen ska vara Ingredienser → "
-            "Gör så här → Matlåda / förvaring → Källor (Regel 4)."
+            "Gör så här → Matlåda / förvaring → Noter (valfri) → Källor (Regel 4)."
         )
     return portions
 
@@ -283,10 +294,23 @@ def section_bounds(lines: list[str], pattern: str) -> tuple[int, int] | None:
     return (start, len(lines)) if start is not None else None
 
 
+def subsection_map(lines: list[str], bounds: tuple[int, int]) -> dict[int, str]:
+    """Radnummer (1-indexerat) -> narmaste foregaende '### '-rubrik i sektionen."""
+    out: dict[int, str] = {}
+    current = ""
+    for idx in range(*bounds):
+        heading = re.match(r"^###\s+(.+?)\s*$", lines[idx])
+        if heading:
+            current = heading.group(1).strip()
+        out[idx + 1] = current
+    return out
+
+
 def parse_ingredients(lines: list[str], rep: Report) -> list[Ingredient]:
     bounds = section_bounds(lines, r"^##\s+Ingredienser")
     if not bounds:
         return []
+    groups = subsection_map(lines, bounds)
     out: list[Ingredient] = []
     for line_no, line in list_items(lines, bounds, r"^[-*]\s+\S"):
         idx = line_no - 1
@@ -326,6 +350,7 @@ def parse_ingredients(lines: list[str], rep: Report) -> list[Ingredient]:
                 has_number=has_number,
                 skip_qty=skip_qty,
                 skip_all=skip_all,
+                group=groups.get(idx + 1, ""),
             )
         )
     return out
@@ -447,6 +472,86 @@ def check_amounts(ingredients: list[Ingredient], steps: list[tuple[int, str]], r
             )
 
 
+# Skafferivaror handlas inte per recept, sa de motiverar ingen totaltabell.
+# Samma avgransning som CLAUDE.md gor for handlingslistan.
+PANTRY = {fold(w) for w in (
+    "salt", "flingsalt", "havssalt", "peppar", "svartpeppar", "vitpeppar",
+    "vatten", "olja", "olivolja", "rapsolja", "matolja",
+)}
+
+
+def check_totals_table(lines: list[str], ingredients: list[Ingredient], rep: Report) -> None:
+    """Delas en ravara mellan dellistor behovs '### Totalt att handla' (Regel 4a)."""
+    bounds = section_bounds(lines, r"^##\s+Ingredienser")
+    if not bounds:
+        return
+    if any(re.match(r"^###\s+Total", lines[i], re.IGNORECASE) for i in range(*bounds)):
+        return
+    if len({ing.group for ing in ingredients if ing.group}) < 2:
+        return
+
+    spread: dict[str, tuple[str, set[str]]] = {}
+    for ing in ingredients:
+        if not ing.group:
+            continue
+        for head in ing.headwords:
+            if fold(head) in PANTRY:
+                continue
+            display, groups = spread.setdefault(fold(head), (head, set()))
+            groups.add(ing.group)
+
+    shared = sorted(display for display, groups in spread.values() if len(groups) > 1)
+    if not shared:
+        return
+    listed = ", ".join(shared[:4]) + (" m.fl." if len(shared) > 4 else "")
+    noun = "råvara" if len(shared) == 1 else "råvaror"
+    rep.tip(
+        f"{len(shared)} {noun} förekommer i flera dellistor ({listed}). Då finns "
+        "totalmängden ingenstans och läsaren får addera för hand — lägg till "
+        "'### Totalt att handla' som tabell först under '## Ingredienser' (Regel 4a)."
+    )
+
+
+# Stegrubriker som beskriver nagot annat an ett moment i sekvensen.
+NON_STEP = re.compile(
+    r"^not\b|\b(alternativ|i stället för|istället för|tidsplan|bakgrund|varför)\b",
+    re.IGNORECASE,
+)
+
+# Steg som kors om i omgangar — da ar en fetmarkerad totalmangd vilseledande.
+BATCH_TRIGGER = re.compile(
+    r"halvera\w*\s+(?:varje|alla|samtliga)\s+mängd"
+    r"|kör momentet (?:två|tre) gånger"
+    r"|dela satsen",
+    re.IGNORECASE,
+)
+BATCH_RESOLVED = re.compile(r"\bper omgång\b|\bvarje omgång\b|\bper sats\b", re.IGNORECASE)
+
+
+def check_step_shape(lines: list[str], rep: Report) -> None:
+    bounds = section_bounds(lines, r"^##\s+Gör så här")
+    if not bounds:
+        return
+
+    for idx in range(*bounds):
+        heading = re.match(r"^#{3,4}\s*\d+\)\s*(.+?)\s*$", lines[idx])
+        if heading and NON_STEP.search(heading.group(1)):
+            rep.tip(
+                f"rad {idx + 1}: steget {heading.group(1)!r} ser ut att vara en variant, "
+                "en tidsplan eller bakgrund snarare än ett moment. Ett numrerat steg är "
+                "något du gör, en gång, i tur och ordning — flytta resten till "
+                "'## Noter' (Regel 4c)."
+            )
+
+    body = "\n".join(lines[bounds[0]: bounds[1]])
+    if BATCH_TRIGGER.search(body) and not BATCH_RESOLVED.search(body):
+        rep.tip(
+            "ett steg körs i omgångar men ingen mängd anges per omgång. En fetmarkerad "
+            "mängd läses som 'det här ska i bunken nu' — skriv mängden du faktiskt tar "
+            "först och totalen som referens (Regel 6)."
+        )
+
+
 def check_prose(lines: list[str], rep: Report) -> None:
     text = "\n".join(lines)
     for phrase in VAGUE:
@@ -483,6 +588,8 @@ def validate(path: Path, fix: bool) -> Report:
     if not ingredients:
         rep.error("hittar inga ingrediensrader under '## Ingredienser' (Regel 3).")
     check_amounts(ingredients, parse_steps(lines), rep)
+    check_totals_table(lines, ingredients, rep)
+    check_step_shape(lines, rep)
     check_prose(lines, rep)
     return rep
 

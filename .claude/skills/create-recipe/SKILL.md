@@ -29,7 +29,8 @@ Användaren vill skapa ett eget recept. Delegera till `recipe-creator`-agenten.
 ## Format
 
 Receptet följer `.claude/rules/recipe-style.md`. Viktigast: **mängden ska stå i
-instruktionsstegen**, inte bara i ingredienslistan. Formatet kontrolleras
+instruktionsstegen**, inte bara i ingredienslistan — och den mängd som står där ska
+vara den läsaren faktiskt tar, även när steget körs i omgångar. Formatet kontrolleras
 automatiskt när agenten skriver filen — `recipe-creator` får eventuella fel
 tillbaka och rättar dem innan den är klar.
 
