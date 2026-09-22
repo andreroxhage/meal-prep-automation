@@ -38,7 +38,7 @@ Följ `.claude/rules/recipe-style.md` — den är den enda källan för receptfo
 Läs den innan du skriver, och `.claude/rules/recipe-examples.md` för ett komplett
 exempel att kopiera. Regeln laddas automatiskt när du öppnar en receptfil.
 
-De tre regler som oftast missas:
+De fem regler som oftast missas:
 
 1. **Mängden ska stå i instruktionssteget**, fetmarkerad, första gången
    ingrediensen används: `Häll **1,5 dl** mjölk över **1 dl** ströbröd`.
@@ -47,6 +47,14 @@ De tre regler som oftast missas:
    "Blanda alla ingredienser" räcker inte.
 3. **Mängd först på ingrediensraden**: `- 1,5 dl mjölk`, aldrig `- Mjölk — 1,5 dl`.
    Decimalkomma, mellanslag före enheten.
+4. **Mängden i steget är den läsaren faktiskt tar** (Regel 6). Körs steget i
+   omgångar eller gäller det en del av satsen, skriv `**200 g** smör (halva
+   listans 400 g)` — aldrig totalen ensam efter ett "halvera varje mängd".
+   En fetmarkerad mängd läses som "det här ska i bunken nu".
+5. **Skriv ut det som ser fel ut** (Regel 5a). Ser momentet misslyckat ut mitt i
+   fast det är rätt — degen skär sig, emulsionen separerar — säg det och säg vad
+   som får det att gå över. Annars "räddar" läsaren en sats som var på väg att
+   lyckas, och räddningen är det som förstör den.
 
 ## Kvalitetskontroll
 
